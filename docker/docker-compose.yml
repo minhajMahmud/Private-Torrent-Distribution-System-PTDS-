@@ -1,0 +1,88 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ptds-postgres
+    environment:
+      POSTGRES_DB: ptds
+      POSTGRES_USER: ptds_user
+      POSTGRES_PASSWORD: ptds_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - ptds-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ptds_user -d ptds"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: ptds-redis
+    ports:
+      - "6379:6379"
+
+  minio:
+    image: minio/minio:latest
+    container_name: ptds-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ptds_minio
+      MINIO_ROOT_PASSWORD: ptds_minio_secret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ptds-minio-data:/data
+
+  # Private BitTorrent tracker (Phase 3). Config wired here so `docker compose up`
+  # already brings up the full topology described in the deployment diagram.
+  chihaya:
+    # Chihaya image on Docker Hub may be private or unavailable; use a lightweight
+    # placeholder so local development doesn't fail. If you want the real tracker,
+    # replace this with the upstream image and config.
+    image: alpine:latest
+    container_name: ptds-chihaya
+    ports:
+      - "6969:6969"
+    command: ["sh", "-c", "while true; do sleep 3600; done"]
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: ptds-backend
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ptds
+      DB_USER: ptds_user
+      DB_PASSWORD: ptds_pass
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-please-override-with-a-strong-256-bit-secret}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5000}
+      # Allow localhost on any port during development using origin patterns
+      # (SecurityConfig now uses allowedOriginPatterns). This lets flutter
+      # dev server (dynamic port) call the API without editing the compose file.
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:*}
+      STORAGE_MODE: local
+      TRACKER_ANNOUNCE_URLS: ${TRACKER_ANNOUNCE_URLS:-http://chihaya:6969/announce}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      chihaya:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    volumes:
+      - ptds-storage:/app/storage
+
+volumes:
+  ptds-pg-data:
+  ptds-minio-data:
+  ptds-storage:

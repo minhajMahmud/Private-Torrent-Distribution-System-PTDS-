@@ -1,0 +1,16 @@
+# Minimal Chihaya private-tracker config (Phase 3 placeholder).
+# Full integration (peer-id whitelisting tied to PTDS users, announce URL
+# signing) lands in Phase 3 alongside the Torrent Module.
+chihaya:
+  metrics_addr: "0.0.0.0:6880"
+  http:
+    addr: "0.0.0.0:6969"
+    read_timeout: "5s"
+    write_timeout: "5s"
+    request_timeout: "8s"
+  storage:
+    name: memory
+    config:
+      gc_interval: "3m"
+      peer_lifetime: "31m"
+  prometheus_endpoint_addr: "0.0.0.0:6880"

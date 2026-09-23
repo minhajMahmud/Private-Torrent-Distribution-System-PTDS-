@@ -1,0 +1,83 @@
+spring:
+  application:
+    name: ptds-backend
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:ptds}
+    username: ${DB_USER:ptds_user}
+    password: ${DB_PASSWORD:ptds_pass}
+    hikari:
+      maximum-pool-size: 10
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+  servlet:
+    multipart:
+      max-file-size: 2GB
+      max-request-size: 2GB
+
+server:
+  port: ${SERVER_PORT:8080}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:change-this-to-a-long-random-base64-secret-in-production-min-256-bits}
+    access-token-expiration-ms: 900000        # 15 minutes
+    refresh-token-expiration-ms: 604800000     # 7 days
+    issuer: ptds-backend
+  frontend:
+    base-url: ${FRONTEND_URL:http://localhost:5000}
+  email:
+    verification-expiry-hours: 24
+    password-reset-expiry-minutes: 30
+  storage:
+    mode: ${STORAGE_MODE:local}                # local | minio
+    local-path: ${STORAGE_LOCAL_PATH:./storage}
+    allowed-extensions: zip,tar,gz,7z,iso,pdf,epub,txt,md,doc,docx,ppt,pptx,xls,xlsx,csv
+    max-size-bytes: ${MAX_UPLOAD_BYTES:2147483648}
+    auto-approve-uploads: ${AUTO_APPROVE_UPLOADS:false}
+  tracker:
+    announce-urls: ${TRACKER_ANNOUNCE_URLS:udp://localhost:6969/announce,http://localhost:6969/announce}
+    piece-length-bytes: 262144
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5000}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+logging:
+  level:
+    com.ptds: DEBUG
+    org.springframework.security: INFO
